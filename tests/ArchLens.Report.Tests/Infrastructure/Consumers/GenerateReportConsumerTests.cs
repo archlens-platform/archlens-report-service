@@ -112,8 +112,11 @@ public class GenerateReportConsumerTests
     }
 
     [Fact]
-    public async Task Consume_WithNullComponentFields_ShouldUseDefaults()
+    public async Task Consume_WithComponentNameNull_ShouldFilterEntry()
     {
+        // The consumer drops components whose Name is missing/blank to avoid
+        // persisting noise from the LLM. OrDefault still fills in Type and
+        // other secondary fields when only those are missing.
         var json = JsonSerializer.Serialize(new
         {
             Components = new[] { new { Name = (string?)null, Type = (string?)null, Description = (string?)null, Confidence = 0.5 } },
@@ -137,7 +140,41 @@ public class GenerateReportConsumerTests
         await _consumer.Consume(context);
 
         await _repository.Received(1).AddAsync(
-            Arg.Is<AnalysisReport>(r => r.Components.Count == 1 && r.Components[0].Name == "Unknown"),
+            Arg.Is<AnalysisReport>(r => r.Components.Count == 0),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Consume_WithComponentSecondaryFieldsNull_ShouldUseDefaults()
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            Components = new[] { new { Name = "Gateway", Type = (string?)null, Description = (string?)null, Confidence = 0.5 } },
+            Connections = Array.Empty<object>(),
+            Risks = Array.Empty<object>(),
+            Recommendations = Array.Empty<string>(),
+            Scores = new { Scalability = 5.0, Security = 5.0, Reliability = 5.0, Maintainability = 5.0 },
+            Confidence = 0.7
+        });
+        var command = new GenerateReportCommand
+        {
+            AnalysisId = Guid.NewGuid(),
+            DiagramId = Guid.NewGuid(),
+            ResultJson = json,
+            ProvidersUsed = ["openai"],
+            ProcessingTimeMs = 100,
+            Timestamp = DateTime.UtcNow
+        };
+        var context = CreateConsumeContext(command);
+
+        await _consumer.Consume(context);
+
+        await _repository.Received(1).AddAsync(
+            Arg.Is<AnalysisReport>(r =>
+                r.Components.Count == 1 &&
+                r.Components[0].Name == "Gateway" &&
+                r.Components[0].Type == "Unknown" &&
+                r.Components[0].Description == ""),
             Arg.Any<CancellationToken>());
     }
 
@@ -172,8 +209,9 @@ public class GenerateReportConsumerTests
     }
 
     [Fact]
-    public async Task Consume_WithNullRiskFields_ShouldUseDefaults()
+    public async Task Consume_WithRiskTitleNull_ShouldFilterEntry()
     {
+        // Same contract as components: a risk without a Title is dropped.
         var json = JsonSerializer.Serialize(new
         {
             Components = Array.Empty<object>(),
@@ -197,7 +235,41 @@ public class GenerateReportConsumerTests
         await _consumer.Consume(context);
 
         await _repository.Received(1).AddAsync(
-            Arg.Is<AnalysisReport>(r => r.Risks.Count == 1 && r.Risks[0].Title == "Unknown Risk"),
+            Arg.Is<AnalysisReport>(r => r.Risks.Count == 0),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Consume_WithRiskSecondaryFieldsNull_ShouldUseDefaults()
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            Components = Array.Empty<object>(),
+            Connections = Array.Empty<object>(),
+            Risks = new[] { new { Title = "Auth bypass", Description = (string?)null, Severity = (string?)null, Category = (string?)null, Mitigation = (string?)null } },
+            Recommendations = (List<string>?)null,
+            Scores = new { Scalability = 5.0, Security = 5.0, Reliability = 5.0, Maintainability = 5.0 },
+            Confidence = 0.5
+        });
+        var command = new GenerateReportCommand
+        {
+            AnalysisId = Guid.NewGuid(),
+            DiagramId = Guid.NewGuid(),
+            ResultJson = json,
+            ProvidersUsed = ["openai"],
+            ProcessingTimeMs = 100,
+            Timestamp = DateTime.UtcNow
+        };
+        var context = CreateConsumeContext(command);
+
+        await _consumer.Consume(context);
+
+        await _repository.Received(1).AddAsync(
+            Arg.Is<AnalysisReport>(r =>
+                r.Risks.Count == 1 &&
+                r.Risks[0].Title == "Auth bypass" &&
+                r.Risks[0].Severity == "Medium" &&
+                r.Risks[0].Category == "General"),
             Arg.Any<CancellationToken>());
     }
 

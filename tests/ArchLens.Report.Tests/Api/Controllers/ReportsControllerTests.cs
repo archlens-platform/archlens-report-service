@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ArchLens.Report.Api.Controllers;
 using ArchLens.Report.Application.Contracts.DTOs.ReportDTOs;
 using ArchLens.Report.Application.UseCases.Reports.Queries.GetByAnalysis;
@@ -7,6 +8,7 @@ using ArchLens.Report.Domain.Interfaces.ReportInterfaces;
 using ArchLens.SharedKernel.Application;
 using FluentAssertions;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 
@@ -14,13 +16,26 @@ namespace ArchLens.Report.Tests.Api.Controllers;
 
 public class ReportsControllerTests
 {
+    private const string TestUserId = "test-user-123";
+
     private readonly IMediator _mediator = Substitute.For<IMediator>();
     private readonly IReportRepository _reportRepo = Substitute.For<IReportRepository>();
     private readonly ReportsController _controller;
 
     public ReportsControllerTests()
     {
-        _controller = new ReportsController(_mediator, _reportRepo);
+        _controller = new ReportsController(_mediator, _reportRepo)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        new[] { new Claim(ClaimTypes.NameIdentifier, TestUserId) },
+                        authenticationType: "Test")),
+                },
+            },
+        };
     }
 
     private static ReportResponse CreateReportResponse()
