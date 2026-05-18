@@ -1,0 +1,22 @@
+tests/ArchLens.Report.Tests/Infrastructure/Consumers/GenerateReportConsumerTests.cs
+  s_0fe0b0ea232cb8::t_f2589286c115a7 115,117-119,143-177
+  s_0fe0b0ea232cb8::t_5dd246874f52b1 212,214,238-272
+tests/ArchLens.Report.Tests/Api/Controllers/ReportsControllerTests.cs
+  s_0fe0b0ea232cb8::t_3d54fae8ffdeb1 1,11,19-20,27-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "af27dd3aedca7f55da64e7182967415d9b420c34",
+  "prompts": {},
+  "sessions": {
+    "s_0fe0b0ea232cb8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c8683f97-9450-43bf-9576-6863b496e20f",
+        "model": "claude-opus-4-7-thinking-xhigh"
+      },
+      "human_author": "Rafael Pereira <66394829+rafahenrique1@users.noreply.github.com>"
+    }
+  }
+}
